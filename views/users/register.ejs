@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar">
+<%- include('../partials/head') %> 
+
+<div class="container">
+    <div class="form-container">
+        <h2 class="text-center mb-4">تسجيل مستخدم جديد</h2>
+    
+        <% if (typeof error !== 'undefined') { %>
+            <div class="alert alert-danger" role="alert">
+                <%= error %>
+            </div>
+        <% } %>
+    
+        <form action="/register" method="POST" class="needs-validation" novalidate>
+            
+            <div class="mb-3">
+                <label for="username" class="form-label">اسم المستخدم:</label>
+                <input type="text" class="form-control" id="username" name="username" required value="<%= typeof username !== 'undefined' ? username : '' %>">
+                <div class="invalid-feedback">
+                    يرجى إدخال اسم المستخدم.
+                </div>
+            </div>
+    
+            <div class="mb-3">
+                <label for="email" class="form-label">البريد الإلكتروني:</label>
+                <input type="email" class="form-control" id="email" name="email" required value="<%= typeof email !== 'undefined' ? email : '' %>">
+                <div class="invalid-feedback">
+                    يرجى إدخال بريد إلكتروني صالح.
+                </div>
+            </div>
+    
+            <div class="mb-3">
+                <label for="password" class="form-label">كلمة المرور:</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+                <div class="invalid-feedback">
+                    يرجى إدخال كلمة المرور.
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-success w-100 mt-3">تسجيل</button>
+        </form>
+        
+        <div class="text-center mt-3">
+            <a href="/login" class="text-secondary">هل لديك حساب بالفعل؟ تسجيل الدخول</a>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ar">
+    <%- include('./partials/header') %> 
+<body>
+    <%- include('./partials/navbar') %> 
+
+    <div class="container text-center">
+        <div class="p-5 mb-4 bg-light rounded-3 shadow-lg">
+            <div class="container-fluid py-5">
+                <h1 class="display-3 text-primary"><%= pageTitle %></h1>
+                <p class="col-md-8 fs-4 mx-auto">
+                   Your everyday essentials, delivered with quality, freshness, and great value.
+                </p>
+                <hr>
+                <div class="alert alert-success mt-4">
+                    Quality you trust, prices you love
+                </div>
+                <a class="btn btn-primary btn-lg mt-3" href="/products" type="button">Go To Product</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

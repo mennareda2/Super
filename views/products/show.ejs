@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar">
+    <%- include('../partials/header') %>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">تفاصيل المنتج: <%= product.name %></h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="lead"><strong>الوصف:</strong> <%= product.description %></p>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5>💰 السعر:</h5>
+                                <p class="text-success fs-4">$<%= product.price.toFixed(2) %></p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5>📦 المخزون المتبقي:</h5>
+                                <p class="text-warning fs-4"><%= product.stockQuantity %> وحدة</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col">
+                                <p class="text-muted small">
+                                    تمت الإضافة بتاريخ: <%= product.createdAt.toLocaleDateString('ar-EG') %>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer d-flex justify-content-start gap-2">
+                        <a href="/products/<%= product._id %>/edit" class="btn btn-info">تعديل</a>
+                        
+                        <form action="/products/<%= product._id %>?_method=DELETE" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-danger">حذف</button>
+                        </form>
+                        
+                        <a href="/products" class="btn btn-secondary me-auto">العودة للقائمة</a>
+                    </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

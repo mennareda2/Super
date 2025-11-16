@@ -1,165 +1,84 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const Member = require("./models/memberModel"); 
-const User = require("./models/userModel");
-const path = require("path");
-const session = require("express-session");
-const bcrypt = require("bcrypt");
+// app.js
 
-const app = express();
-const port = 3000;
+const express = require('express');
+const mongoose = require('mongoose');
+const path = require('path');
+const dotenv = require('dotenv');
+const methodOverride = require('method-override');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 
-// ===== Middlewares =====
-app.use(express.json());
+dotenv.config();
+
+// 1. إنشاء تطبيق Express (التصحيح: هذا هو السطر المفقود الذي حل مشكلة 'app is not defined')
+const app = express(); 
+
+const PORT = process.env.PORT || 3000; 
+
+// استيراد ملفات المسارات
+const productRoutes = require('./routes/products'); 
+const userRoutes = require('./routes/users'); 
+
+
+// 2. إعداد متجر الجلسة (Session Store)
+const store = MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    touchAfter: 24 * 3600,
+    secret: process.env.SESSION_SECRET
+});
+
+store.on('error', function (e) {
+    console.log('SESSION STORE ERROR:', e);
+});
+
+// 3. إعداد خيارات الجلسة
+const sessionConfig = {
+    store,
+    name: 'session-id', 
+    secret: process.env.SESSION_SECRET, 
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        httpOnly: true,
+        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7
+    }
+};
+
+// 4. الاتصال بقاعدة البيانات
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('✅ MongoDB Connected Successfully!'))
+    .catch(err => console.error('❌ MongoDB Connection Error:', err));
+
+// 5. إعداد EJS
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// 6. Middleware الأساسية
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "views"))); // CSS
-app.set("view engine", "ejs");
+app.use(express.json());
+app.use(methodOverride('_method'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(session(sessionConfig)); 
 
-// ===== Session setup =====
-app.use(session({
-  secret: "yourSecretKey", 
-  resave: false,
-  saveUninitialized: false
-}));
-
-// ===== Connect to MongoDB =====
-mongoose
-  .connect("mongodb://localhost:27017/GymDB")
-  .then(() => {
-    app.listen(port, () => console.log(`✅ Server running at: http://localhost:${port}/`));
-    console.log("💾 Connected to MongoDB locally");
-  })
-  .catch((err) => console.error("Connection error:", err));
-
-function isAuthenticated(req, res, next) {
-  if (req.session.userId) return next();
-  res.redirect("/login");
-}
-
-// ===== Routes =====
-
-// Home page - form to add member
-app.get("/", (req, res) => res.render("index"));
-
-// Success page
-app.get("/success.html", (req, res) => res.render("success"));
-
-// ===== Register/Login =====
-app.get("/register", (req, res) => {
-  res.render("register", { errorMsg: "" });
-});
-
-app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.render("register", { errorMsg: "⚠️ هذا المستخدم مسجل بالفعل!" });
-    }
-
-    const user = new User({ username, password });
-    await user.save();
-
-
-    res.redirect("/login");
-  } catch (err) {
-    console.error(err);
-    res.render("register", { errorMsg: "⚠️ حدث خطأ أثناء التسجيل، حاول مرة أخرى" });
-  }
+// 7. Middleware لتمرير متغيرات الجلسة إلى الـ Views (res.locals)
+app.use((req, res, next) => {
+    // تمرير userId (إذا كان موجوداً) ليكون متاحاً لجميع ملفات EJS (navbar)
+    res.locals.userId = req.session.userId; 
+    next();
 });
 
 
+// 8. تعريف المسارات الرئيسية
+app.use('/products', productRoutes); 
+app.use('/', userRoutes); 
 
-app.get("/login", (req, res) => {
-  res.render("login", { errorMsg: "" });
+app.get('/', (req, res) => {
+    res.render('home', { pageTitle: 'الصفحة الرئيسية لسوبر ماركت Express' });
 });
 
-
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const user = await User.findOne({ username });
-
-    if (!user) {
-      return res.render("login", { 
-        errorMsg: "⚠️ هذا المستخدم غير مسجل، الرجاء التسجيل أولاً!" 
-      });
-    }
-    const match = await bcrypt.compare(password, user.password);
-
-    if (!match) {
-      return res.render("login", { 
-        errorMsg: "⚠️ كلمة المرور غير صحيحة!" 
-      });
-    }
-
-    req.session.userId = user._id;
-    res.redirect("/Members");
-
-  } catch (err) {
-    console.error(err);
-    res.render("login", { 
-      errorMsg: "⚠️ حدث خطأ أثناء تسجيل الدخول" 
-    });
-  }
-});
-
-
-
-
-app.get("/logout", (req, res) => {
-  req.session.destroy();
-  res.redirect("/login");
-});
-
-// ===== Members CRUD + Search =====
-
-// Get all members
-app.get("/Members", isAuthenticated, async (req, res) => {
-  const members = await Member.find();
-  res.render("Members", { myTitle: "Members", members });
-});
-
-// Create new member
-app.post("/", async (req, res) => {
-  try {
-    const newMember = new Member({
-      name: req.body.name,
-      age: req.body.age,
-      phone: req.body.phone,
-      membershipType: req.body.membershipType,
-      startDate: req.body.startDate,
-    });
-    await newMember.save();
-    res.redirect("/success.html");
-  } catch (error) {
-    console.error(error);
-    res.status(400).send({ message: "Error creating member", error });
-  }
-});
-
-// Delete a member by ID
-app.post("/delete/:id", isAuthenticated, async (req, res) => {
-  try {
-    await Member.findByIdAndDelete(req.params.id);
-    res.redirect("/Members");
-  } catch (error) {
-    console.error(error);
-    res.status(400).send({ message: "Error deleting member", error });
-  }
-});
-
-// Search members by name
-app.get("/search", isAuthenticated, async (req, res) => {
-  try {
-    const searchQuery = req.query.name;
-    const members = await Member.find({
-      name: { $regex: searchQuery, $options: "i" }
-    });
-    res.render("Members", { myTitle: "Search Results", members });
-  } catch (error) {
-    console.error(error);
-    res.status(400).send({ message: "Error searching members", error });
-  }
+// 9. تشغيل الخادم
+app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`🔗 http://localhost:${PORT}`);
 });
